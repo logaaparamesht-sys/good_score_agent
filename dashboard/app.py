@@ -30,6 +30,20 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+    /* Hide Streamlit top header, deploy button, and footer */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    #MainMenu {
+        visibility: hidden;
+    }
+    footer {
+        visibility: hidden;
+    }
+    div[data-testid="stDecoration"] {
+        display: none !important;
+    }
+
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
