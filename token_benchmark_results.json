@@ -1,0 +1,74 @@
+[
+  {
+    "flow": "score_analysis & score_improvement",
+    "prompt": "What is my current credit score across bureaus and how can I improve it?",
+    "mode": "Lean",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "score_trend_summary",
+    "prompt": "Summarize my 12-month credit score trend history.",
+    "mode": "Lean",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "bill_payment",
+    "prompt": "Show my pending utility bills and pay my Tata Power bill.",
+    "mode": "Lean",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "enquiry_removal",
+    "prompt": "Check my credit enquiries and request removal of any unauthorized hard pull.",
+    "mode": "Lean",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "loan_eligibility",
+    "prompt": "Am I eligible for a personal or home loan based on my score?",
+    "mode": "Lean",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "noc_mail_draft",
+    "prompt": "Draft an NOC request letter for my closed loan account #LN9981 with HDFC Bank.",
+    "mode": "Lean",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "score_analysis & score_improvement",
+    "prompt": "What is my current credit score across bureaus and how can I improve it?",
+    "mode": "Agentic",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/agent-chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "score_trend_summary",
+    "prompt": "Summarize my 12-month credit score trend history.",
+    "mode": "Agentic",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/agent-chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "bill_payment",
+    "prompt": "Show my pending utility bills and pay my Tata Power bill.",
+    "mode": "Agentic",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/agent-chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "enquiry_removal",
+    "prompt": "Check my credit enquiries and request removal of any unauthorized hard pull.",
+    "mode": "Agentic",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/agent-chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "loan_eligibility",
+    "prompt": "Am I eligible for a personal or home loan based on my score?",
+    "mode": "Agentic",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/agent-chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  },
+  {
+    "flow": "noc_mail_draft",
+    "prompt": "Draft an NOC request letter for my closed loan account #LN9981 with HDFC Bank.",
+    "mode": "Agentic",
+    "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/agent-chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+  }
+]

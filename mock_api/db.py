@@ -10,23 +10,27 @@ import asyncpg
 _pool: asyncpg.Pool | None = None
 
 
-async def get_pool() -> asyncpg.Pool:
-    """Return the module-level connection pool (created lazily)."""
+async def get_pool() -> asyncpg.Pool | None:
+    """Return the module-level connection pool (created lazily). Returns None if database is unreachable."""
     global _pool
     if _pool is None:
-        # DATABASE_URL comes in SQLAlchemy-style; asyncpg needs plain postgres://
         dsn = os.environ.get(
             "DATABASE_URL",
-            "postgresql://support_user:support_pass@postgres:5432/support_ai",
+            "postgresql://support_user:support_pass@localhost:5432/support_ai",
         )
-        # Normalise driver prefix so asyncpg can parse it
         dsn = dsn.replace("postgresql+asyncpg://", "postgresql://")
-        _pool = await asyncpg.create_pool(dsn, min_size=2, max_size=10)
+        try:
+            _pool = await asyncpg.create_pool(dsn, min_size=1, max_size=5, timeout=2.0)
+        except Exception:
+            _pool = None
     return _pool
 
 
 async def close_pool() -> None:
     global _pool
     if _pool is not None:
-        await _pool.close()
+        try:
+            await _pool.close()
+        except Exception:
+            pass
         _pool = None

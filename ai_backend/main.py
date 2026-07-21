@@ -13,6 +13,12 @@ import json
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env in parent or current dir
+load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -85,6 +91,31 @@ class ChatRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+def _count_tokens(data) -> int:
+    """Accurately count tokens using tiktoken (cl100k_base), fallback to character ratio."""
+    try:
+        import tiktoken
+        enc = tiktoken.get_encoding("cl100k_base")
+        if isinstance(data, str):
+            return len(enc.encode(data))
+        elif isinstance(data, list):
+            total = 0
+            for item in data:
+                if hasattr(item, "content"):
+                    c = item.content
+                    if isinstance(c, str):
+                        total += len(enc.encode(c))
+                elif isinstance(item, dict):
+                    total += len(enc.encode(str(item)))
+                else:
+                    total += len(enc.encode(str(item)))
+            return total
+        return len(enc.encode(str(data)))
+    except Exception:
+        s = str(data)
+        return max(1, len(s) // 4)
+
+
 def _build_llm(**kwargs) -> ChatOpenAI:
     model_name = os.environ.get("MODEL_NAME", "llama-3.3-70b-versatile")
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -172,12 +203,19 @@ async def chat(req: ChatRequest):
 
     messages.append(HumanMessage(content=req.message))
 
+    prompt_tokens = _count_tokens(messages)
     llm = _build_llm()
 
     async def generate():
+        completion_text = ""
         async for chunk in llm.astream(messages):
             if chunk.content:
+                completion_text += chunk.content
                 yield f"data: {json.dumps({'content': chunk.content})}\n\n"
+        
+        completion_tokens = _count_tokens(completion_text)
+        total_tokens = prompt_tokens + completion_tokens
+        yield f"data: {json.dumps({'token_usage': {'prompt_tokens': prompt_tokens, 'completion_tokens': completion_tokens, 'total_tokens': total_tokens, 'mode': 'lean'}})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
@@ -217,10 +255,20 @@ async def agent_chat(req: ChatRequest):
 
     async def generate():
         nonlocal messages
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
 
         for _round in range(MAX_TOOL_ROUNDS):
+            round_prompt_tokens = _count_tokens(messages)
+            total_prompt_tokens += round_prompt_tokens
+
             response: AIMessage = await llm.ainvoke(messages)
             messages.append(response)
+
+            round_comp_tokens = _count_tokens(response.content or "")
+            if response.tool_calls:
+                round_comp_tokens += _count_tokens(str(response.tool_calls))
+            total_completion_tokens += round_comp_tokens
 
             if not response.tool_calls:
                 if response.content:
@@ -251,10 +299,18 @@ async def agent_chat(req: ChatRequest):
                     content="Please summarize what you've found and respond to the user."
                 )
             )
+            round_prompt_tokens = _count_tokens(messages)
+            total_prompt_tokens += round_prompt_tokens
+
             final = await llm.ainvoke(messages)
+            round_comp_tokens = _count_tokens(final.content or "")
+            total_completion_tokens += round_comp_tokens
+
             if final.content:
                 yield f"data: {json.dumps({'content': final.content})}\n\n"
 
+        total_tokens = total_prompt_tokens + total_completion_tokens
+        yield f"data: {json.dumps({'token_usage': {'prompt_tokens': total_prompt_tokens, 'completion_tokens': total_completion_tokens, 'total_tokens': total_tokens, 'mode': 'agentic'}})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

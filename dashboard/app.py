@@ -190,6 +190,9 @@ st.caption(f"Active Customer: **{customer_id}** | 18 Flows Supported")
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
+        if "token_usage" in msg:
+            tu = msg["token_usage"]
+            st.caption(f"🪙 Token Consumption: **{tu['prompt_tokens']}** prompt | **{tu['completion_tokens']}** completion | **{tu['total_tokens']}** total ({tu['mode'].upper()})")
         if "tool_calls" in msg:
             for tc in msg["tool_calls"]:
                 st.markdown(
@@ -234,6 +237,7 @@ if prompt:
     with st.chat_message("assistant"):
         response_text = ""
         tool_calls = []
+        token_usage = None
         placeholder = st.empty()
 
         try:
@@ -255,6 +259,9 @@ if prompt:
                         response_text += data["content"]
                         placeholder.markdown(response_text + "▌")
 
+                    if "token_usage" in data:
+                        token_usage = data["token_usage"]
+
                     if "tool_call" in data:
                         tool_calls.append(
                             {
@@ -268,6 +275,8 @@ if prompt:
                             st.text(data.get("result_preview", "")[:300])
 
             placeholder.markdown(response_text)
+            if token_usage:
+                st.caption(f"🪙 Token Consumption: **{token_usage['prompt_tokens']}** prompt | **{token_usage['completion_tokens']}** completion | **{token_usage['total_tokens']}** total ({token_usage['mode'].upper()})")
 
         except requests.exceptions.ConnectionError:
             response_text = f"⚠️ Could not connect to backend at `{AI_BACKEND_URL}`. Ensure containers are running."
@@ -279,4 +288,6 @@ if prompt:
     msg_data = {"role": "assistant", "content": response_text}
     if tool_calls:
         msg_data["tool_calls"] = tool_calls
+    if token_usage:
+        msg_data["token_usage"] = token_usage
     st.session_state.messages.append(msg_data)
