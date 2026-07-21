@@ -26,7 +26,8 @@ from tools import ALL_TOOLS, _get_client, MOCK_API_URL
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-MODEL_NAME = "gpt-4o-mini"
+MODEL_NAME = os.environ.get("MODEL_NAME", "glm-4.5-air")
+OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "https://open.bigmodel.cn/api/paas/v4/")
 
 SYSTEM_PROMPT = """You are GoodScore AI, an expert financial and credit score advisor assistant.
 You assist customers with their credit health, credit scores, bill payments, disputes, loan options, and account management.
@@ -85,12 +86,22 @@ class ChatRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 def _build_llm(**kwargs) -> ChatOpenAI:
-    return ChatOpenAI(
-        model=MODEL_NAME,
-        temperature=0.3,
-        streaming=True,
-        **kwargs,
-    )
+    model_name = os.environ.get("MODEL_NAME", "glm-4.5-air")
+    api_key = os.environ.get("OPENAI_API_KEY")
+    base_url = os.environ.get("OPENAI_API_BASE", "https://open.bigmodel.cn/api/paas/v4/")
+
+    llm_kwargs = {
+        "model": model_name,
+        "temperature": 0.3,
+        "streaming": True,
+    }
+
+    if base_url:
+        llm_kwargs["openai_api_base"] = base_url
+    if api_key:
+        llm_kwargs["openai_api_key"] = api_key
+
+    return ChatOpenAI(**llm_kwargs, **kwargs)
 
 
 async def _prefetch_context(customer_id: str) -> str:
