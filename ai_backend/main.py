@@ -26,8 +26,8 @@ from tools import ALL_TOOLS, _get_client, MOCK_API_URL
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-MODEL_NAME = os.environ.get("MODEL_NAME", "glm-4.5-air")
-OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "https://open.bigmodel.cn/api/paas/v4/")
+MODEL_NAME = os.environ.get("MODEL_NAME", "llama-3.3-70b-versatile")
+OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "https://api.groq.com/openai/v1")
 
 SYSTEM_PROMPT = """You are GoodScore AI, an expert financial and credit score advisor assistant.
 You assist customers with their credit health, credit scores, bill payments, disputes, loan options, and account management.
@@ -86,9 +86,9 @@ class ChatRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 def _build_llm(**kwargs) -> ChatOpenAI:
-    model_name = os.environ.get("MODEL_NAME", "glm-4.5-air")
+    model_name = os.environ.get("MODEL_NAME", "llama-3.3-70b-versatile")
     api_key = os.environ.get("OPENAI_API_KEY")
-    base_url = os.environ.get("OPENAI_API_BASE", "https://open.bigmodel.cn/api/paas/v4/")
+    base_url = os.environ.get("OPENAI_API_BASE", "https://api.groq.com/openai/v1")
 
     llm_kwargs = {
         "model": model_name,
