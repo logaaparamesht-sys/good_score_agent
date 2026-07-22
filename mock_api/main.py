@@ -177,8 +177,72 @@ async def search_kb(query: str = Query(..., min_length=1)):
 
 
 # ---------------------------------------------------------------------------
-# Credit Score & History Endpoints
+# Credit Report & Score Endpoints
 # ---------------------------------------------------------------------------
+@app.get("/customers/{customer_id}/credit-report")
+async def get_credit_report(customer_id: str):
+    """Unified creditReport endpoint returning latest_scores, score_factors, score_history, enquiryAccounts, recentEnquiryCount, accounts, and disputes."""
+    await _jitter()
+    pool = await get_pool()
+    if pool is None:
+        return {
+            "customer_id": customer_id,
+            "latest_scores": [
+                {"bureau": "CIBIL", "score": 762, "checked_on": "2025-07-20"},
+                {"bureau": "Experian", "score": 748, "checked_on": "2025-07-18"},
+                {"bureau": "Equifax", "score": 755, "checked_on": "2025-07-15"}
+            ],
+            "score_factors": [
+                {"impact": "positive", "factor": "Payment History", "detail": "98% on-time payments over 4 years — excellent track record"},
+                {"impact": "negative", "factor": "Credit Utilization", "detail": "Using 68% of available credit limit; ideal is below 30%"},
+                {"impact": "positive", "factor": "Credit Age", "detail": "Average account age is 6.2 years — long history helps"}
+            ],
+            "score_history": [
+                {"month": "2025-05", "score": 752, "bureau": "CIBIL"},
+                {"month": "2025-06", "score": 758, "bureau": "CIBIL"},
+                {"month": "2025-07", "score": 762, "bureau": "CIBIL"}
+            ],
+            "enquiryAccounts": [
+                {"enquiry_id": "E001", "lender": "HDFC Bank", "enquiry_type": "hard", "enquiry_date": "2025-02-10", "status": "active"},
+                {"enquiry_id": "E002", "lender": "ICICI Bank", "enquiry_type": "hard", "enquiry_date": "2025-04-15", "status": "active"},
+                {"enquiry_id": "E004", "lender": "CIBIL Self-Check", "enquiry_type": "soft", "enquiry_date": "2025-07-20", "status": "active"}
+            ],
+            "recentEnquiryCount": 2,
+            "accounts": [
+                {"account_id": "ACC101", "lender": "HDFC Bank", "account_type": "Credit Card", "status": "active", "opened_date": "2021-03-15"},
+                {"account_id": "ACC102", "lender": "SBI", "account_type": "Home Loan", "status": "active", "opened_date": "2022-01-10"},
+                {"account_id": "ACC103", "lender": "Axis Bank", "account_type": "Personal Loan", "status": "closed", "opened_date": "2020-05-01", "closed_date": "2024-06-30"}
+            ],
+            "disputes": [
+                {"dispute_id": "D001", "bureau": "CIBIL", "account_name": "HDFC Credit Card", "reason": "incorrect_balance", "status": "resolved", "filed_on": "2025-05-10"}
+            ]
+        }
+    
+    scores = await pool.fetch("SELECT * FROM credit_scores WHERE customer_id = $1 AND record_type = 'current' ORDER BY checked_on DESC", customer_id)
+    factors = await pool.fetch("SELECT * FROM credit_scores WHERE customer_id = $1 AND record_type = 'factor'", customer_id)
+    history = await pool.fetch("SELECT * FROM credit_scores WHERE customer_id = $1 AND record_type = 'history' ORDER BY month ASC", customer_id)
+    enquiries = await pool.fetch("SELECT * FROM enquiries WHERE customer_id = $1 ORDER BY enquiry_date DESC", customer_id)
+    disputes = await pool.fetch("SELECT * FROM disputes WHERE customer_id = $1 ORDER BY filed_on DESC", customer_id)
+
+    recent_enq_count = sum(1 for e in enquiries if e.get("enquiry_type") == "hard" and e.get("status") == "active")
+
+    accounts = [
+        {"account_id": f"ACC_{i+1}", "lender": e["lender"], "account_type": "Loan/Credit Account", "status": "active", "opened_date": e["enquiry_date"]}
+        for i, e in enumerate(enquiries) if e.get("enquiry_type") == "hard"
+    ]
+
+    return {
+        "customer_id": customer_id,
+        "latest_scores": [_row_to_dict(s) for s in scores],
+        "score_factors": [_row_to_dict(f) for f in factors],
+        "score_history": [_row_to_dict(h) for h in history],
+        "enquiryAccounts": [_row_to_dict(e) for e in enquiries],
+        "recentEnquiryCount": recent_enq_count,
+        "accounts": accounts,
+        "disputes": [_row_to_dict(d) for d in disputes]
+    }
+
+
 @app.get("/customers/{customer_id}/credit-score")
 async def get_credit_score(customer_id: str):
     await _jitter()
@@ -196,8 +260,8 @@ async def get_credit_score(customer_id: str):
                 {"impact": "low", "factor": "Recent Enquiries", "detail": "1 hard enquiry in the past 6 months"}
             ]
         }
-    scores = await pool.fetch("SELECT * FROM credit_scores WHERE customer_id = $1 ORDER BY checked_on DESC", customer_id)
-    factors = await pool.fetch("SELECT * FROM score_factors WHERE customer_id = $1", customer_id)
+    scores = await pool.fetch("SELECT * FROM credit_scores WHERE customer_id = $1 AND record_type = 'current' ORDER BY checked_on DESC", customer_id)
+    factors = await pool.fetch("SELECT * FROM credit_scores WHERE customer_id = $1 AND record_type = 'factor'", customer_id)
     if not scores:
         raise HTTPException(status_code=404, detail="No score found for customer")
     return {
@@ -219,7 +283,7 @@ async def get_score_history(customer_id: str):
             {"month": "2025-04", "score": 758}, {"month": "2025-05", "score": 760},
             {"month": "2025-06", "score": 760}, {"month": "2025-07", "score": 762}
         ]
-    rows = await pool.fetch("SELECT * FROM score_history WHERE customer_id = $1 ORDER BY month ASC", customer_id)
+    rows = await pool.fetch("SELECT * FROM credit_scores WHERE customer_id = $1 AND record_type = 'history' ORDER BY month ASC", customer_id)
     return [_row_to_dict(r) for r in rows]
 
 
@@ -464,7 +528,7 @@ async def get_loan_eligibility(customer_id: str):
                 {"loan_id": "L102", "lender": "SBI", "loan_type": "Home Loan", "min_score": 750, "max_amount": 5000000.0, "interest_rate": 8.4}
             ]
         }
-    score_row = await pool.fetchrow("SELECT score FROM credit_scores WHERE customer_id = $1 ORDER BY checked_on DESC LIMIT 1", customer_id)
+    score_row = await pool.fetchrow("SELECT score FROM credit_scores WHERE customer_id = $1 AND record_type = 'current' ORDER BY checked_on DESC LIMIT 1", customer_id)
     score = score_row["score"] if score_row else 600
     rows = await pool.fetch("SELECT * FROM loans WHERE min_score <= $1 ORDER BY interest_rate ASC", score)
     return {
@@ -559,6 +623,89 @@ async def convert_overdue_emi(customer_id: str, req: EmiConversionRequest):
         "ticket_id": ticket_id,
         "new_tenure_months": req.preferred_tenure,
         "message": f"Overdue EMI of ₹{float(emi['emi_amount'])} converted into restructured plan. Lender will reach out within 24 hours."
+    }
+
+
+# ---------------------------------------------------------------------------
+# Spend History, Overdue Eligibility, & Freshchat Support Routing
+# ---------------------------------------------------------------------------
+@app.get("/customers/{customer_id}/spend-history")
+async def get_spend_history(customer_id: str):
+    """Fetch customer's monthly spendHistory by category for financial_advice flow."""
+    await _jitter()
+    pool = await get_pool()
+    if pool is None:
+        return {
+            "customer_id": customer_id,
+            "month": "2025-07",
+            "total_spend": 53548.0,
+            "categories": [
+                {"category": "utilities", "amount": 4748.0},
+                {"category": "debt_repayment", "amount": 24500.0},
+                {"category": "shopping", "amount": 18200.0},
+                {"category": "dining", "amount": 6400.0}
+            ]
+        }
+    rows = await pool.fetch("SELECT * FROM spend_history WHERE customer_id = $1 ORDER BY month DESC", customer_id)
+    if not rows:
+        return {
+            "customer_id": customer_id,
+            "month": "2025-07",
+            "total_spend": 0.0,
+            "categories": []
+        }
+    total = sum(float(r["amount"]) for r in rows)
+    return {
+        "customer_id": customer_id,
+        "month": rows[0]["month"],
+        "total_spend": total,
+        "categories": [_row_to_dict(r) for r in rows]
+    }
+
+
+@app.get("/customers/{customer_id}/overdue-eligibility")
+async def get_overdue_eligibility(customer_id: str):
+    """Fetch customer's overdue Eligibility details and overdue EMI status."""
+    await _jitter()
+    pool = await get_pool()
+    if pool is None:
+        return {
+            "customer_id": customer_id,
+            "overdue_count": 1,
+            "eligible_for_restructuring": True,
+            "overdue_emis": [
+                {
+                    "emi_id": "EMI001",
+                    "loan_ref": "HL-AX-2023-4521",
+                    "lender": "Axis Bank",
+                    "emi_amount": 18500.0,
+                    "due_date": "2025-06-05",
+                    "days_overdue": 46,
+                    "status": "overdue"
+                }
+            ]
+        }
+    rows = await pool.fetch("SELECT * FROM overdue_emis WHERE customer_id = $1", customer_id)
+    emis = [_row_to_dict(r) for r in rows]
+    overdue_count = sum(1 for e in emis if e.get("status") == "overdue")
+    return {
+        "customer_id": customer_id,
+        "overdue_count": overdue_count,
+        "eligible_for_restructuring": overdue_count > 0,
+        "overdue_emis": emis
+    }
+
+
+@app.post("/customers/{customer_id}/contact-support")
+async def contact_support_routing(customer_id: str):
+    """Handler for Freshchat routing (contact_support flow, no external fetch)."""
+    await _jitter()
+    return {
+        "customer_id": customer_id,
+        "routing_status": "assigned_to_freshchat",
+        "channel": "Freshchat Live Support Queue",
+        "estimated_wait_time": "2 minutes",
+        "message": "Connected to Freshchat routing agent. Live agent will assist shortly."
     }
 
 

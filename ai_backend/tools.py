@@ -92,8 +92,33 @@ async def search_kb(query: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # GoodScore Flow-Specific Tools
 # ---------------------------------------------------------------------------
+
+@tool
+async def get_credit_report(customer_id: str) -> str:
+    """Fetch customer's full credit report (scores, factors, history, enquiryAccounts, recentEnquiryCount, accounts, disputes)."""
+    client = _get_client()
+    resp = await client.get(f"/customers/{customer_id}/credit-report")
+    if resp.status_code == 404:
+        return f"No credit report found for customer {customer_id}."
+    resp.raise_for_status()
+    data = resp.json()
+    scores = "\n".join([f"- {s['bureau']}: {s['score']} (as of {s['checked_on']})" for s in data.get("latest_scores", [])])
+    factors = "\n".join([f"- [{f['impact'].upper()}] {f['factor']}: {f['detail']}" for f in data.get("score_factors", [])])
+    enquiries = "\n".join([f"- [{e['enquiry_id']}] {e['lender']} ({e['enquiry_type']}) on {e['enquiry_date']}" for e in data.get("enquiryAccounts", [])])
+    accounts = "\n".join([f"- [{a['account_id']}] {a['lender']} ({a['account_type']}) - Status: {a['status']}" for a in data.get("accounts", [])])
+    disputes = "\n".join([f"- [{d['dispute_id']}] Bureau={d['bureau']} | Account={d['account_name']} | Status={d['status']}" for d in data.get("disputes", [])])
+    
+    return (
+        f"### Credit Scores:\n{scores}\n\n"
+        f"### Score Factors:\n{factors}\n\n"
+        f"### Credit Enquiries (Recent hard enquiry count: {data.get('recentEnquiryCount', 0)}):\n{enquiries}\n\n"
+        f"### User Accounts:\n{accounts}\n\n"
+        f"### Disputes:\n{disputes}"
+    )
+
 
 @tool
 async def get_credit_score(customer_id: str) -> str:
@@ -127,7 +152,7 @@ async def get_score_history(customer_id: str) -> str:
 
 @tool
 async def get_bills(customer_id: str) -> str:
-    """Fetch customer's BBPS utility and service bills."""
+    """Fetch customer's BBPS utility and service bills (billFetch data)."""
     client = _get_client()
     resp = await client.get(f"/customers/{customer_id}/bills")
     resp.raise_for_status()
@@ -226,7 +251,7 @@ async def request_enquiry_removal(customer_id: str, enquiry_id: str, reason: str
 
 @tool
 async def get_subscription(customer_id: str) -> str:
-    """Fetch customer's current GoodScore subscription plan details."""
+    """Fetch customer's current GoodScore subscription plan details (subscriptionDetails)."""
     client = _get_client()
     resp = await client.get(f"/customers/{customer_id}/subscription")
     resp.raise_for_status()
@@ -245,6 +270,17 @@ async def update_subscription(customer_id: str, plan: str, auto_renew: bool = Tr
     resp.raise_for_status()
     s = resp.json()
     return f"Subscription updated! New Plan: {s['plan'].upper()}, Price: ₹{s['amount']}/month, Status: {s['status']}."
+
+
+@tool
+async def get_spend_history(customer_id: str) -> str:
+    """Fetch customer's monthly spend history breakdown by category for financial advice."""
+    client = _get_client()
+    resp = await client.get(f"/customers/{customer_id}/spend-history")
+    resp.raise_for_status()
+    data = resp.json()
+    cats = "\n".join([f"- {c['category'].title()}: ₹{c['amount']}" for c in data.get("categories", [])])
+    return f"### Spend History ({data.get('month', 'N/A')}):\nTotal Spend: ₹{data.get('total_spend', 0)}\n\nBreakdown:\n{cats}"
 
 
 @tool
@@ -297,6 +333,17 @@ async def draft_noc_letter(customer_id: str, lender: str, account_number: str) -
 
 
 @tool
+async def get_overdue_eligibility(customer_id: str) -> str:
+    """Fetch customer's overdue eligibility details and overdue EMI status."""
+    client = _get_client()
+    resp = await client.get(f"/customers/{customer_id}/overdue-eligibility")
+    resp.raise_for_status()
+    data = resp.json()
+    emis = "\n".join([f"- [{e['emi_id']}] {e['lender']} ({e['loan_ref']}): ₹{e['emi_amount']} | {e['days_overdue']} days overdue | status={e['status']}" for e in data.get("overdue_emis", [])])
+    return f"### Overdue EMI Eligibility:\nOverdue Count: {data.get('overdue_count', 0)}\nRestructuring Eligible: {data.get('eligible_for_restructuring', False)}\n\nOverdue EMIs:\n{emis}"
+
+
+@tool
 async def convert_overdue_emi(customer_id: str, emi_id: str, preferred_tenure: int = 12) -> str:
     """Convert/restructure an overdue EMI into a manageable repayment plan."""
     client = _get_client()
@@ -311,12 +358,23 @@ async def convert_overdue_emi(customer_id: str, emi_id: str, preferred_tenure: i
     return f"EMI conversion initiated! Ticket ID: {res['ticket_id']}. {res['message']}"
 
 
+@tool
+async def route_to_freshchat_support(customer_id: str) -> str:
+    """Route customer query to live Freshchat support queue (contact_support flow handler)."""
+    client = _get_client()
+    resp = await client.post(f"/customers/{customer_id}/contact-support")
+    resp.raise_for_status()
+    res = resp.json()
+    return f"Freshchat Routing Complete: {res['message']} (Channel: {res['channel']}, Est. Wait: {res['estimated_wait_time']})"
+
+
 # List of all tools for bind_tools
 ALL_TOOLS = [
     get_customer_info,
     get_open_tickets,
     create_support_ticket,
     search_kb,
+    get_credit_report,
     get_credit_score,
     get_score_history,
     get_bills,
@@ -328,9 +386,12 @@ ALL_TOOLS = [
     request_enquiry_removal,
     get_subscription,
     update_subscription,
+    get_spend_history,
     check_loan_eligibility,
     get_available_loans,
     request_report_update,
     draft_noc_letter,
+    get_overdue_eligibility,
     convert_overdue_emi,
+    route_to_freshchat_support,
 ]

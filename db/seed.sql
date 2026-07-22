@@ -33,103 +33,103 @@ ON CONFLICT DO NOTHING;
 -- ================================================================
 -- CREDIT SCORES  (latest per bureau per customer)
 -- ================================================================
-INSERT INTO credit_scores (customer_id, score, bureau, checked_on) VALUES
-    ('C001', 762, 'CIBIL',    '2025-07-20'),
-    ('C001', 748, 'Experian', '2025-07-18'),
-    ('C001', 755, 'Equifax',  '2025-07-15'),
-    ('C002', 623, 'CIBIL',    '2025-07-19'),
-    ('C002', 610, 'Experian', '2025-07-10'),
-    ('C003', 812, 'CIBIL',    '2025-07-20'),
-    ('C003', 805, 'Experian', '2025-07-20'),
-    ('C004', 580, 'CIBIL',    '2025-07-18'),
-    ('C004', 572, 'Experian', '2025-07-12'),
-    ('C005', 721, 'CIBIL',    '2025-07-20'),
-    ('C005', 715, 'Experian', '2025-07-17')
+INSERT INTO credit_scores (customer_id, record_type, score, bureau, checked_on) VALUES
+    ('C001', 'current', 762, 'CIBIL',    '2025-07-20'),
+    ('C001', 'current', 748, 'Experian', '2025-07-18'),
+    ('C001', 'current', 755, 'Equifax',  '2025-07-15'),
+    ('C002', 'current', 623, 'CIBIL',    '2025-07-19'),
+    ('C002', 'current', 610, 'Experian', '2025-07-10'),
+    ('C003', 'current', 812, 'CIBIL',    '2025-07-20'),
+    ('C003', 'current', 805, 'Experian', '2025-07-20'),
+    ('C004', 'current', 580, 'CIBIL',    '2025-07-18'),
+    ('C004', 'current', 572, 'Experian', '2025-07-12'),
+    ('C005', 'current', 721, 'CIBIL',    '2025-07-20'),
+    ('C005', 'current', 715, 'Experian', '2025-07-17')
 ON CONFLICT DO NOTHING;
 
 -- ================================================================
 -- SCORE FACTORS  (what's helping / hurting each customer)
 -- ================================================================
-INSERT INTO score_factors (customer_id, factor, impact, detail) VALUES
+INSERT INTO credit_scores (customer_id, record_type, factor, impact, detail) VALUES
     -- Alice (762 – good)
-    ('C001', 'Payment History',       'positive', '98% on-time payments over 4 years — excellent track record'),
-    ('C001', 'Credit Utilization',    'negative', 'Using 68% of available credit limit; ideal is below 30%'),
-    ('C001', 'Credit Age',            'positive', 'Average account age is 6.2 years — long history helps'),
-    ('C001', 'Credit Mix',            'positive', 'Good mix: 2 credit cards, 1 home loan, 1 personal loan'),
-    ('C001', 'Recent Enquiries',      'negative', '3 hard enquiries in last 6 months — consider spacing applications'),
+    ('C001', 'factor', 'Payment History',       'positive', '98% on-time payments over 4 years — excellent track record'),
+    ('C001', 'factor', 'Credit Utilization',    'negative', 'Using 68% of available credit limit; ideal is below 30%'),
+    ('C001', 'factor', 'Credit Age',            'positive', 'Average account age is 6.2 years — long history helps'),
+    ('C001', 'factor', 'Credit Mix',            'positive', 'Good mix: 2 credit cards, 1 home loan, 1 personal loan'),
+    ('C001', 'factor', 'Recent Enquiries',      'negative', '3 hard enquiries in last 6 months — consider spacing applications'),
 
     -- Bob (623 – needs work)
-    ('C002', 'Payment History',       'negative', '4 late payments in the last 12 months — biggest drag on score'),
-    ('C002', 'Credit Utilization',    'negative', '82% utilization across 2 cards — heavily over-leveraged'),
-    ('C002', 'Credit Age',            'negative', 'Average account age only 1.8 years — too new'),
-    ('C002', 'Credit Mix',            'negative', 'Only credit cards, no installment loans — limited diversity'),
-    ('C002', 'Outstanding Debt',      'negative', 'Total outstanding: ₹3,45,000 across 2 accounts'),
+    ('C002', 'factor', 'Payment History',       'negative', '4 late payments in the last 12 months — biggest drag on score'),
+    ('C002', 'factor', 'Credit Utilization',    'negative', '82% utilization across 2 cards — heavily over-leveraged'),
+    ('C002', 'factor', 'Credit Age',            'negative', 'Average account age only 1.8 years — too new'),
+    ('C002', 'factor', 'Credit Mix',            'negative', 'Only credit cards, no installment loans — limited diversity'),
+    ('C002', 'factor', 'Outstanding Debt',      'negative', 'Total outstanding: ₹3,45,000 across 2 accounts'),
 
     -- Carol (812 – excellent)
-    ('C003', 'Payment History',       'positive', '100% on-time payments over 6 years — flawless record'),
-    ('C003', 'Credit Utilization',    'positive', 'Only 12% utilization — well within ideal range'),
-    ('C003', 'Credit Age',            'positive', 'Average account age 8.5 years — very mature credit history'),
-    ('C003', 'Credit Mix',            'positive', 'Diverse: credit cards, home loan, car loan, business line of credit'),
-    ('C003', 'Recent Enquiries',      'positive', 'Only 1 soft enquiry in last 12 months'),
+    ('C003', 'factor', 'Payment History',       'positive', '100% on-time payments over 6 years — flawless record'),
+    ('C003', 'factor', 'Credit Utilization',    'positive', 'Only 12% utilization — well within ideal range'),
+    ('C003', 'factor', 'Credit Age',            'positive', 'Average account age 8.5 years — very mature credit history'),
+    ('C003', 'factor', 'Credit Mix',            'positive', 'Diverse: credit cards, home loan, car loan, business line of credit'),
+    ('C003', 'factor', 'Recent Enquiries',      'positive', 'Only 1 soft enquiry in last 12 months'),
 
     -- David (580 – poor)
-    ('C004', 'Payment History',       'negative', '7 late payments including 2 defaults — severely impacting score'),
-    ('C004', 'Outstanding Debt',      'negative', 'Total outstanding: ₹8,20,000 with 2 accounts in collections'),
-    ('C004', 'Credit Utilization',    'negative', '95% utilization — nearly maxed out all credit lines'),
-    ('C004', 'Recent Enquiries',      'negative', '6 hard enquiries in last 3 months — signals credit-hungry behavior'),
-    ('C004', 'Credit Age',            'neutral',  'Average account age 2.5 years — moderate'),
+    ('C004', 'factor', 'Payment History',       'negative', '7 late payments including 2 defaults — severely impacting score'),
+    ('C004', 'factor', 'Outstanding Debt',      'negative', 'Total outstanding: ₹8,20,000 with 2 accounts in collections'),
+    ('C004', 'factor', 'Credit Utilization',    'negative', '95% utilization — nearly maxed out all credit lines'),
+    ('C004', 'factor', 'Recent Enquiries',      'negative', '6 hard enquiries in last 3 months — signals credit-hungry behavior'),
+    ('C004', 'factor', 'Credit Age',            'neutral',  'Average account age 2.5 years — moderate'),
 
     -- Eva (721 – good)
-    ('C005', 'Payment History',       'positive', '96% on-time payments — mostly reliable'),
-    ('C005', 'Credit Utilization',    'positive', '25% utilization — within healthy range'),
-    ('C005', 'Outstanding Debt',      'negative', '₹1,80,000 personal loan balance — moderate debt load'),
-    ('C005', 'Credit Mix',            'positive', 'Credit card + personal loan + gold loan — decent mix'),
-    ('C005', 'Credit Age',            'positive', 'Average account age 5 years')
+    ('C005', 'factor', 'Payment History',       'positive', '96% on-time payments — mostly reliable'),
+    ('C005', 'factor', 'Credit Utilization',    'positive', '25% utilization — within healthy range'),
+    ('C005', 'factor', 'Outstanding Debt',      'negative', '₹1,80,000 personal loan balance — moderate debt load'),
+    ('C005', 'factor', 'Credit Mix',            'positive', 'Credit card + personal loan + gold loan — decent mix'),
+    ('C005', 'factor', 'Credit Age',            'positive', 'Average account age 5 years')
 ON CONFLICT DO NOTHING;
 
 -- ================================================================
 -- SCORE HISTORY  (monthly trend – 12 months per customer)
 -- ================================================================
-INSERT INTO score_history (customer_id, score, month, bureau) VALUES
+INSERT INTO credit_scores (customer_id, record_type, score, month, bureau) VALUES
     -- Alice – steady improvement
-    ('C001', 710, '2024-08', 'CIBIL'), ('C001', 715, '2024-09', 'CIBIL'),
-    ('C001', 718, '2024-10', 'CIBIL'), ('C001', 722, '2024-11', 'CIBIL'),
-    ('C001', 730, '2024-12', 'CIBIL'), ('C001', 735, '2025-01', 'CIBIL'),
-    ('C001', 738, '2025-02', 'CIBIL'), ('C001', 742, '2025-03', 'CIBIL'),
-    ('C001', 748, '2025-04', 'CIBIL'), ('C001', 752, '2025-05', 'CIBIL'),
-    ('C001', 758, '2025-06', 'CIBIL'), ('C001', 762, '2025-07', 'CIBIL'),
+    ('C001', 'history', 710, '2024-08', 'CIBIL'), ('C001', 'history', 715, '2024-09', 'CIBIL'),
+    ('C001', 'history', 718, '2024-10', 'CIBIL'), ('C001', 'history', 722, '2024-11', 'CIBIL'),
+    ('C001', 'history', 730, '2024-12', 'CIBIL'), ('C001', 'history', 735, '2025-01', 'CIBIL'),
+    ('C001', 'history', 738, '2025-02', 'CIBIL'), ('C001', 'history', 742, '2025-03', 'CIBIL'),
+    ('C001', 'history', 748, '2025-04', 'CIBIL'), ('C001', 'history', 752, '2025-05', 'CIBIL'),
+    ('C001', 'history', 758, '2025-06', 'CIBIL'), ('C001', 'history', 762, '2025-07', 'CIBIL'),
 
     -- Bob – declining trend
-    ('C002', 698, '2024-08', 'CIBIL'), ('C002', 690, '2024-09', 'CIBIL'),
-    ('C002', 682, '2024-10', 'CIBIL'), ('C002', 675, '2024-11', 'CIBIL'),
-    ('C002', 668, '2024-12', 'CIBIL'), ('C002', 660, '2025-01', 'CIBIL'),
-    ('C002', 652, '2025-02', 'CIBIL'), ('C002', 648, '2025-03', 'CIBIL'),
-    ('C002', 641, '2025-04', 'CIBIL'), ('C002', 635, '2025-05', 'CIBIL'),
-    ('C002', 629, '2025-06', 'CIBIL'), ('C002', 623, '2025-07', 'CIBIL'),
+    ('C002', 'history', 698, '2024-08', 'CIBIL'), ('C002', 'history', 690, '2024-09', 'CIBIL'),
+    ('C002', 'history', 682, '2024-10', 'CIBIL'), ('C002', 'history', 675, '2024-11', 'CIBIL'),
+    ('C002', 'history', 668, '2024-12', 'CIBIL'), ('C002', 'history', 660, '2025-01', 'CIBIL'),
+    ('C002', 'history', 652, '2025-02', 'CIBIL'), ('C002', 'history', 648, '2025-03', 'CIBIL'),
+    ('C002', 'history', 641, '2025-04', 'CIBIL'), ('C002', 'history', 635, '2025-05', 'CIBIL'),
+    ('C002', 'history', 629, '2025-06', 'CIBIL'), ('C002', 'history', 623, '2025-07', 'CIBIL'),
 
     -- Carol – consistently excellent
-    ('C003', 798, '2024-08', 'CIBIL'), ('C003', 800, '2024-09', 'CIBIL'),
-    ('C003', 802, '2024-10', 'CIBIL'), ('C003', 804, '2024-11', 'CIBIL'),
-    ('C003', 805, '2024-12', 'CIBIL'), ('C003', 807, '2025-01', 'CIBIL'),
-    ('C003', 808, '2025-02', 'CIBIL'), ('C003', 809, '2025-03', 'CIBIL'),
-    ('C003', 810, '2025-04', 'CIBIL'), ('C003', 810, '2025-05', 'CIBIL'),
-    ('C003', 811, '2025-06', 'CIBIL'), ('C003', 812, '2025-07', 'CIBIL'),
+    ('C003', 'history', 798, '2024-08', 'CIBIL'), ('C003', 'history', 800, '2024-09', 'CIBIL'),
+    ('C003', 'history', 802, '2024-10', 'CIBIL'), ('C003', 'history', 804, '2024-11', 'CIBIL'),
+    ('C003', 'history', 805, '2024-12', 'CIBIL'), ('C003', 'history', 807, '2025-01', 'CIBIL'),
+    ('C003', 'history', 808, '2025-02', 'CIBIL'), ('C003', 'history', 809, '2025-03', 'CIBIL'),
+    ('C003', 'history', 810, '2025-04', 'CIBIL'), ('C003', 'history', 810, '2025-05', 'CIBIL'),
+    ('C003', 'history', 811, '2025-06', 'CIBIL'), ('C003', 'history', 812, '2025-07', 'CIBIL'),
 
     -- David – volatile, dropping
-    ('C004', 645, '2024-08', 'CIBIL'), ('C004', 638, '2024-09', 'CIBIL'),
-    ('C004', 640, '2024-10', 'CIBIL'), ('C004', 625, '2024-11', 'CIBIL'),
-    ('C004', 618, '2024-12', 'CIBIL'), ('C004', 610, '2025-01', 'CIBIL'),
-    ('C004', 605, '2025-02', 'CIBIL'), ('C004', 598, '2025-03', 'CIBIL'),
-    ('C004', 592, '2025-04', 'CIBIL'), ('C004', 588, '2025-05', 'CIBIL'),
-    ('C004', 585, '2025-06', 'CIBIL'), ('C004', 580, '2025-07', 'CIBIL'),
+    ('C004', 'history', 645, '2024-08', 'CIBIL'), ('C004', 'history', 638, '2024-09', 'CIBIL'),
+    ('C004', 'history', 640, '2024-10', 'CIBIL'), ('C004', 'history', 625, '2024-11', 'CIBIL'),
+    ('C004', 'history', 618, '2024-12', 'CIBIL'), ('C004', 'history', 610, '2025-01', 'CIBIL'),
+    ('C004', 'history', 605, '2025-02', 'CIBIL'), ('C004', 'history', 598, '2025-03', 'CIBIL'),
+    ('C004', 'history', 592, '2025-04', 'CIBIL'), ('C004', 'history', 588, '2025-05', 'CIBIL'),
+    ('C004', 'history', 585, '2025-06', 'CIBIL'), ('C004', 'history', 580, '2025-07', 'CIBIL'),
 
     -- Eva – recovery arc
-    ('C005', 680, '2024-08', 'CIBIL'), ('C005', 678, '2024-09', 'CIBIL'),
-    ('C005', 682, '2024-10', 'CIBIL'), ('C005', 688, '2024-11', 'CIBIL'),
-    ('C005', 692, '2024-12', 'CIBIL'), ('C005', 698, '2025-01', 'CIBIL'),
-    ('C005', 702, '2025-02', 'CIBIL'), ('C005', 705, '2025-03', 'CIBIL'),
-    ('C005', 710, '2025-04', 'CIBIL'), ('C005', 714, '2025-05', 'CIBIL'),
-    ('C005', 718, '2025-06', 'CIBIL'), ('C005', 721, '2025-07', 'CIBIL')
+    ('C005', 'history', 680, '2024-08', 'CIBIL'), ('C005', 'history', 678, '2024-09', 'CIBIL'),
+    ('C005', 'history', 682, '2024-10', 'CIBIL'), ('C005', 'history', 688, '2024-11', 'CIBIL'),
+    ('C005', 'history', 692, '2024-12', 'CIBIL'), ('C005', 'history', 698, '2025-01', 'CIBIL'),
+    ('C005', 'history', 702, '2025-02', 'CIBIL'), ('C005', 'history', 705, '2025-03', 'CIBIL'),
+    ('C005', 'history', 710, '2025-04', 'CIBIL'), ('C005', 'history', 714, '2025-05', 'CIBIL'),
+    ('C005', 'history', 718, '2025-06', 'CIBIL'), ('C005', 'history', 721, '2025-07', 'CIBIL')
 ON CONFLICT DO NOTHING;
 
 -- ================================================================
@@ -533,4 +533,31 @@ Transfer the outstanding loan to another lender at a lower interest rate, resett
 • **Delete account**: Settings → Account → Delete Account. This is irreversible — all data and history is permanently removed after 30 days.
 • **Refer & Earn**: Share your referral code. Both you and your friend get 1 month of Gold plan free.')
 
+ON CONFLICT DO NOTHING;
+
+-- ================================================================
+-- SPEND HISTORY  (Monthly spend category breakdown)
+-- ================================================================
+INSERT INTO spend_history (customer_id, month, category, amount) VALUES
+    ('C001', '2025-07', 'utilities',      4748.00),
+    ('C001', '2025-07', 'debt_repayment', 24500.00),
+    ('C001', '2025-07', 'shopping',       18200.00),
+    ('C001', '2025-07', 'dining',          6400.00),
+
+    ('C002', '2025-07', 'utilities',      3129.00),
+    ('C002', '2025-07', 'debt_repayment', 27250.00),
+    ('C002', '2025-07', 'shopping',       12400.00),
+
+    ('C003', '2025-07', 'utilities',      15448.00),
+    ('C003', '2025-07', 'debt_repayment', 45000.00),
+    ('C003', '2025-07', 'shopping',       32000.00),
+    ('C003', '2025-07', 'travel',         19500.00),
+
+    ('C004', '2025-07', 'utilities',      3020.00),
+    ('C004', '2025-07', 'debt_repayment', 25600.00),
+    ('C004', '2025-07', 'shopping',       14500.00),
+
+    ('C005', '2025-07', 'utilities',      11699.00),
+    ('C005', '2025-07', 'debt_repayment', 18400.00),
+    ('C005', '2025-07', 'shopping',       21000.00)
 ON CONFLICT DO NOTHING;

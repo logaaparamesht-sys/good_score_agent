@@ -122,7 +122,7 @@ GoodScore_agent/
 ├── .env.example            # Environment variable template
 ├── README.md
 ├── db/
-│   ├── schema.sql          # 11 table definitions (auto-applied on first boot)
+│   ├── schema.sql          # 9 table definitions (auto-applied on first boot)
 │   └── seed.sql            # Rich synthetic dataset for 18 flows
 ├── mock_api/               # Data layer — ONLY service that touches Postgres
 │   ├── Dockerfile

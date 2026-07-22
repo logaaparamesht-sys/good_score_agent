@@ -136,13 +136,16 @@ def _build_llm(**kwargs) -> ChatOpenAI:
 
 
 async def _prefetch_context(customer_id: str) -> str:
-    """Fetch customer profile, credit score, open tickets, and subscription in parallel for lean mode."""
+    """Fetch customer profile, creditReport, billFetch, subscriptionDetails, spendHistory, and overdueEligibility in parallel for lean mode."""
     client = _get_client()
-    cust_resp, score_resp, tickets_resp, sub_resp = await asyncio.gather(
+    cust_resp, report_resp, bills_resp, sub_resp, spend_resp, overdue_resp, tickets_resp = await asyncio.gather(
         client.get(f"/customers/{customer_id}"),
-        client.get(f"/customers/{customer_id}/credit-score"),
-        client.get(f"/customers/{customer_id}/tickets"),
+        client.get(f"/customers/{customer_id}/credit-report"),
+        client.get(f"/customers/{customer_id}/bills"),
         client.get(f"/customers/{customer_id}/subscription"),
+        client.get(f"/customers/{customer_id}/spend-history"),
+        client.get(f"/customers/{customer_id}/overdue-eligibility"),
+        client.get(f"/customers/{customer_id}/tickets"),
         return_exceptions=True
     )
 
@@ -159,20 +162,43 @@ async def _prefetch_context(customer_id: str) -> str:
     else:
         parts.append(f"## Customer Profile\nCustomer {customer_id} not found.")
 
-    if not isinstance(score_resp, Exception) and score_resp.status_code == 200:
-        sdata = score_resp.json()
-        s_lines = [f"- {s['bureau']}: {s['score']} ({s['checked_on']})" for s in sdata.get("latest_scores", [])]
-        f_lines = [f"- [{f['impact'].upper()}] {f['factor']}: {f['detail']}" for f in sdata.get("score_factors", [])]
-        parts.append(f"## Credit Scores\n" + "\n".join(s_lines) + "\n\n### Factors\n" + "\n".join(f_lines))
+    if not isinstance(report_resp, Exception) and report_resp.status_code == 200:
+        rep = report_resp.json()
+        s_lines = [f"- {s['bureau']}: {s['score']} ({s['checked_on']})" for s in rep.get("latest_scores", [])]
+        f_lines = [f"- [{f['impact'].upper()}] {f['factor']}: {f['detail']}" for f in rep.get("score_factors", [])]
+        enq_lines = [f"- [{e['enquiry_id']}] {e['lender']} ({e['enquiry_type']}) on {e['enquiry_date']}" for e in rep.get("enquiryAccounts", [])]
+        acc_lines = [f"- [{a['account_id']}] {a['lender']} ({a['account_type']}) - Status: {a['status']}" for a in rep.get("accounts", [])]
+        parts.append(
+            f"## Prefetched creditReport\n"
+            f"### Bureau Scores\n" + "\n".join(s_lines) +
+            f"\n\n### Score Factors\n" + "\n".join(f_lines) +
+            f"\n\n### Enquiry Accounts (Hard count: {rep.get('recentEnquiryCount', 0)})\n" + "\n".join(enq_lines) +
+            f"\n\n### User Accounts (getUserAccountsFromReport)\n" + "\n".join(acc_lines)
+        )
+
+    if not isinstance(bills_resp, Exception) and bills_resp.status_code == 200:
+        bills = bills_resp.json()
+        if bills:
+            b_lines = [f"- [{b['bill_id']}] {b['biller_name']} ({b['category']}): ₹{b['amount']} | status={b['status']}" for b in bills]
+            parts.append(f"## Prefetched billFetch (fetchedBillsData)\n" + "\n".join(b_lines))
 
     if not isinstance(sub_resp, Exception) and sub_resp.status_code == 200:
         sub = sub_resp.json()
-        parts.append(f"## Subscription\n- Plan: {sub.get('plan', 'free').upper()}\n- Status: {sub.get('status', 'active')}")
+        parts.append(f"## Prefetched subscriptionDetails\n- Plan: {sub.get('plan', 'free').upper()}\n- Amount: ₹{sub.get('amount', 0)}\n- Status: {sub.get('status', 'active')}")
+
+    if not isinstance(spend_resp, Exception) and spend_resp.status_code == 200:
+        spend = spend_resp.json()
+        c_lines = [f"- {c['category'].title()}: ₹{c['amount']}" for c in spend.get("categories", [])]
+        parts.append(f"## Prefetched spendHistory ({spend.get('month', 'N/A')})\nTotal: ₹{spend.get('total_spend', 0)}\n" + "\n".join(c_lines))
+
+    if not isinstance(overdue_resp, Exception) and overdue_resp.status_code == 200:
+        overdue = overdue_resp.json()
+        parts.append(f"## Prefetched overdueEligibility\n- Overdue Count: {overdue.get('overdue_count', 0)}\n- Restructuring Eligible: {overdue.get('eligible_for_restructuring', False)}")
 
     if not isinstance(tickets_resp, Exception) and tickets_resp.status_code == 200:
         tickets = tickets_resp.json()
         if tickets:
-            lines = ["## Open Tickets"]
+            lines = ["## Open Support Tickets"]
             for t in tickets:
                 esc = f" — escalated: {t['escalation_reason']}" if t.get("escalation_reason") else ""
                 lines.append(f"- [{t['ticket_id']}] {t['subject']} (status={t['status']}, priority={t['priority']}){esc}")

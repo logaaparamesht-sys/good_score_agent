@@ -37,25 +37,14 @@ CREATE TABLE IF NOT EXISTS kb_articles (
 CREATE TABLE IF NOT EXISTS credit_scores (
     id           SERIAL PRIMARY KEY,
     customer_id  TEXT NOT NULL REFERENCES customers(customer_id),
-    score        INTEGER NOT NULL,
-    bureau       TEXT NOT NULL DEFAULT 'CIBIL',              -- CIBIL / Experian / Equifax
-    checked_on   TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS score_factors (
-    id           SERIAL PRIMARY KEY,
-    customer_id  TEXT NOT NULL REFERENCES customers(customer_id),
-    factor       TEXT NOT NULL,
-    impact       TEXT NOT NULL,                              -- positive / negative / neutral
-    detail       TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS score_history (
-    id           SERIAL PRIMARY KEY,
-    customer_id  TEXT NOT NULL REFERENCES customers(customer_id),
-    score        INTEGER NOT NULL,
-    month        TEXT NOT NULL,                              -- YYYY-MM
-    bureau       TEXT NOT NULL DEFAULT 'CIBIL'
+    record_type  TEXT NOT NULL DEFAULT 'current',            -- current / factor / history
+    score        INTEGER,                                    -- present for 'current' and 'history'
+    bureau       TEXT DEFAULT 'CIBIL',                       -- CIBIL / Experian / Equifax
+    checked_on   TEXT,                                       -- ISO-8601 date (for 'current')
+    month        TEXT,                                       -- YYYY-MM (for 'history')
+    factor       TEXT,                                       -- factor name (for 'factor')
+    impact       TEXT,                                       -- positive / negative / neutral (for 'factor')
+    detail       TEXT                                        -- factor description (for 'factor')
 );
 
 -- ---- Bills & Payments ----
@@ -135,4 +124,14 @@ CREATE TABLE IF NOT EXISTS overdue_emis (
     days_overdue   INTEGER NOT NULL DEFAULT 0,
     status         TEXT NOT NULL DEFAULT 'overdue',          -- overdue / converted / paid
     converted_to   TEXT                                      -- NULL, 'restructured', 'extended'
+);
+
+-- ---- Spend History ----
+
+CREATE TABLE IF NOT EXISTS spend_history (
+    id           SERIAL PRIMARY KEY,
+    customer_id  TEXT NOT NULL REFERENCES customers(customer_id),
+    month        TEXT NOT NULL,                              -- YYYY-MM
+    category     TEXT NOT NULL,                              -- shopping / utilities / dining / travel / debt_repayment
+    amount       NUMERIC(12,2) NOT NULL
 );
